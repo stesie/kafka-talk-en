@@ -86,20 +86,21 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 # Number of Partitions
 
 * (extremely) hard to change
-* use many enouch so you can scale
+* use enough so you can scale
 * number should be divisible by number of consumers without rest  
-  otherwise imbalance of load
+  ...otherwise imbalance of load
 * usually like 12 or 40
 
 <!--v-->
 
-# Log Compaction
+# Retention Policy
 
 * what happens to "old" messages?
+* default: eliminate after 7d
 * two "types" of messages
    * Event Stream
    * Aggregated Data
-* Log Compaction eliminates old messages with the same key
+* Log Compaction: eliminate old messages with same key
 
 <!--v-->
 

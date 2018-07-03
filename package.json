@@ -1,0 +1,16 @@
+{
+  "name": "kafka-talk-de",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "reveal-md talk.md --theme custom --highlight-theme solarized-light",
+    "export": "reveal-md talk.md --theme custom --highlight-theme solarized-light --static _static/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Stefan Siegl <stesie@brokenpipe.de>",
+  "license": "MIT",
+  "dependencies": {
+    "reveal-md": "^0.1.2"
+  }
+}

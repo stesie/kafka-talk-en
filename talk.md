@@ -16,93 +16,94 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 <!--v-->
 
-# Nachrichten
+# Messages
 
-* "Messages"
-* bestehen aus Key & Value
-* grundsätzlich Binärdaten
-* typischerweise: JSON oder Avro
+* consist Key & Value
+* internally represented as binary data
+* typically: JSON or Avro
 
 <!--v-->
 
 # Topics
 
-* ... eine "Kategorie" von Nachrichten
-* (Schnittgrenze ist in etwa gleich wie DDD Aggregate)
-* ... sind unterteilt in Partitionen
+* ... are a "category" of messages
+* (boundary as of a DDD aggregate)
+* ... are partitioned
 
 <!--v-->
 
-# Partitionen
+# Partitions
 
-* "commit log" für neue Nachrichten
-* werden nur am Ende beschrieben
-* nur innerhalb Partition besteht Ordnung
-* ist Basis für Replikation
+* "commit log" of new messages
+* always appended
+* messages only ordered within partition
+* base of replication
 * 1 Leader, 0..n Follower
 
 <!--v-->
 
-![Aufbau eines Topics mit Partitionen](topic_anatomy.png)
+![anatomy of a topic with its' partitions](topic_anatomy.png)
 
 <!--v-->
 
 # Producer
 
-* veröffentlicht eine Nachricht auf ein Topic
-* Producer legt fest, auf welche Partition ID
-* Nachricht ohne Key, üblicherweise round-robin
-* mit Key, üblicherweise auf Basis Hash über Key
+* publishes messages onto a topic
+* producer decides onto which partition
+* messages without a key, typically round-robin
+* with a key, based on a hash over the key (mod n)
 
 <!--v-->
 
 # Consumer
 
-* holt Nachrichten von Topic
-* Lesefortschritt ("Offset") wird von Consumer verwaltet(!)
-   * via Commit auf internem Topic
-* Nachrichten verbleiben nach dem Lesen im Topic
-* beliebig viele Consumer auf einem Topic
+* fetches messages from a topic
+* progress (so-called "offset") is tracked by the consumer(!)
+   * via Commit onto internal topic
+* messages remain on the topic
+* arbitrary number of parallel consumers on a topic
 
 <!--v-->
 
-![Consumer können an verschiedenen Offsets lesen](log_consumer.png)
+![Consumer can read from different offsets](log_consumer.png)
 
 <!--v-->
 
 # Consumer Groups
 
-* "Label" unter dem sich mehrere Consumer untereinander abstimmen
-* letztlich nur eine Zeichenfolge
-* Verteilung erfolgt auf Basis von Partitionen
-* d.h. niemals zwei Consumer für eine "halbe" Partition
+* "Label" which multiple consumers can use to sync among each other
+* just a simple string
+* distribution happens on partition level
+* i.e. never two consumers will share a single "half" partition
+* number of partitions is upper bound for consumers within a group
 
 <!--v-->
 
-![zwei Consumer Groups](consumer-groups.png)
+![two consumer groups](consumer-groups.png)
 
 <!--v-->
 
-# Anzahl Partitionen
+# Number of Partitions
 
-* nur (sehr) schwer änderbar
-* so viele, dass man weiter skalieren kann
-* Anzahl sollte restlos durch Anzahl Consumer teilbar sein, sonst Last-Ungleichgewicht
-* Richtwert: 12 oder 40
+* (extremely) hard to change
+* use many enouch so you can scale
+* number should be divisible by number of consumers without rest  
+  otherwise imbalance of load
+* usually like 12 or 40
 
 <!--v-->
 
 # Log Compaction
 
-* was passiert mit "alten" Nachrichten?
-* zwei "Arten" von Nachrichten
+* what happens to "old" messages?
+* two "types" of messages
    * Event Stream
-   * Aggregierte Daten
-* Log Compaction streicht alte Nachrichten mit dem gleichen Key
+   * Aggregated Data
+* Log Compaction eliminates old messages with the same key
 
 <!--v-->
 
-![Visualisierung Log Cleaner Vorgehen](log_cleaner_anatomy.png)
+![Visualisation of Log Cleaner](log_cleaner_anatomy.png)
 
 <!--s-->
 
@@ -111,50 +112,51 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 ## Queue
 
-* d.h. ein Prozess kippt Tasks in eine Queue und Worker arbeiten ab
-* beliebig viele Services sind Teil *einer* Consumer Group
-* wenn die Tasks stateless sind, dann ohne Key (-> round-robin Verteilung)
-* wenn Worker Events aggregieren, dann gruppierendes Attribut als Key
+* one process adds tasks to a queue + bunch of worker nodes processing each
+* arbitrary number of services is part of a *single* consumer group
+* if tasks are stateless, no key is needed (-> round-robin distribution)
+* if workers aggregate events, provide key to partition on
 
 <!--v-->
 
 ## Pub/Sub
 
-* d.h. Event wird publiziert und es gibt eine Reihe an interessierten Services
-* jeder der Services ist in einer *eigenen* Consumer Group
-* Konsequenz: jeder Service erhält das Event zur Verarbeitung
+* event is published + plenty of "interested" parties
+* each service is part of *its own* consumer group
+* consequence: each service will receive the event for processing
 
 <!--v-->
 
-## Mischfälle
+## Mix of both
 
-* z.B. Events werden publiziert, an denen mehrere Services interessiert sind + Lastverteilung
-* jede Art von Service in *eigener* Consumer Group
-* alle Services die parallel zur Lastverteilung laufen, sind *in der gleichen* Consumer Group
+* e.g. events are published, multiple services with many instances of each
+* every kind of service has its own consumer group
+* instances of the same service are part *of the same* consumer group
 
 <!--v-->
 
 ## Replay
 
-* nachdem die Consumer den Offset selbst verwalten, können sie auch einfach nochmal von vorn lesen
-* neuer Service, der existierende Events verarbeiten soll, kann bestimmen ob er von Anfang oder ab aktuellem Ende konsumieren will
+* as consumers track the offsets on their own, they can seek back to the beginning
+* new service may decide to process "from now on" or "from the beginnig"
 
 <!--s-->
 
-# Skalierbarkeit
+# Scalability
 
-* bei Kafka sind die Broker vergleichsweise doof
-* Großteil der Arbeit machen Producer & Consumer
-* Konsequenz: Unterschiede im Funktionsumfang der Client-Libraries (z.B. Java vs. PHP)
-   * z.B. produced `nmred/kafka-php` immer round robin
+* Kafka's brokers are pretty dumb
+* much of the work is done by Producers & Consumers
+* consequence: differences in features of client libraries (e.g. Java vs. PHP)
+   * e.g. PHP `nmred/kafka-php` always produces in round robin mode (regardless of Key)
 
 <!--s-->
 
 # TL;DR
 
-* Kafka ist ganz witzig, wenn das Erhaltenbleiben von Nachrichten wichtig ist
-* ... oder wenn man die Skalierbarkeit braucht
-* im Java-Umfeld macht das auch eher Spaß (-> kafka-streams)
+Kafka is nice, if ...
+* ... message retention is of advantage
+* ... you need the scalability
+* ... fun to work with if you're on the JVM
 
 <!--s-->
 
@@ -164,41 +166,41 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 ## kafka-streams
 
-* Java Library für stream processing
-* kümmert sich um
-   * Verteilung auf Instanzen
-   * Fehlerbehandlung
-   * Windowing
-   * State-Verwaltung
+* java library for stream processing
+* cares for
+   * distribution among instances
+   * error handling
+   * windowing
+   * state distribution/management
 
 <!--v-->
 
-## zwei APIs
+## two different APIs
 
 * Streams DSL (= high-level)
 * Processor API (= low-level)
 
 <!--s-->
 
-# Beispiele
+# Examples
 
 <!--v-->
 
 ## Stateless Processor
 
-* quasi der einfachste Fall
-* Topologie beginnt bei einem Topic (oder mehreren)
-* die Streams DSL bietet die üblichen Primitiven a la `filter` & `map`
-* Ergebnis kann man
-   * verarbeiten (`foreach`)
-   * wieder veröffentlichen (`to`)
+* the simple case
+* topology starts with at a topic (or several)
+* Streams DSL offers common primitives like `filter` & `map`
+* result can be
+   * processed locally (`foreach`)
+   * published back to kafka (`to`)
 
 <!--v-->
 
-### Beispiel
+### Example
 
-* Ziel ist die Auswertung eines nginx access logs
-* im ersten Schritt soll jede Zeile geparsed und das wieder publiziert werden
+* simple processing pipeline of nginx access logs
+* first step: parse each line and re-publish
 
 <!--v-->
 
@@ -223,19 +225,19 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 ## Stateful Processor
 
-* kafka-streams kann lokale state-stores verwalten
-* diese sind ebenso partitioniert wie das Quell-Topic
-* los geht's mit `groupBy` bzw. `groupByKey`
-* gruppierter Stream muss dann aggregiert werden
+* kafka-streams can provide local state-stores
+* partitioned based on source-topic
+* started with either `groupBy` or `groupByKey`
+* grouped stream then must be aggregated by
    * count
    * reduce (value -> value -> value)
    * aggregate (aggregate, key -> value -> aggregate -> aggregate)
 
 <!--v-->
 
-### Beispiel
+### Example
 
-* pro IP-Adresse feststellen wie viele Bytes übertragen wurden
+* determine sum of response bytes by IP-address
 
 <!--v-->
 
@@ -260,32 +262,35 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 ## Windowing
 
-* ein gruppierter Stream kann nochmal in Fenster geteilt werden
-   * Zeit-basiert (ggf. mit Überlappung)
-   * Session-basiert
+* grouped stream can be partitioned into windows
+   * time-based (possibly with overlappings)
+   * session-based
 
 <!--v-->
 
-## Beispiel
+## Example
 
-* Auswertung: Anzahl 500er Responses pro 5-Minuten-Fenster?
+* Report: how many internal server errors per five minute interval?
 
 
 <!--v-->
 
 ## Processor API
 
-* low-level API, bei der man jeden Verarbeitungsknoten selbst "from scratch" erstellt
-* process-Methode bekommt einfach jede eingehende Nachricht
-* kann beliebig Nachrichten in der Topologie weiterreichen
-* beliebige Zugriffe auf State-Store
-* punctuation (scheduler-getriggered $dinge tun)
+* low-level API, which the DSL is based on
+* every processing node is created "from scratch"
+* process-method is invoked for each incoming message
+* ... and can forward 0..n messages
+* topology is a free, acyclic graph
+* arbitrary accesses to local state stores
+* punctuation callbacks
 
 <!--v-->
 
-## Beispiel
+## Example
 
-* Auswertung: haben wir 401er, auf die kein 200er folgt (innerhalb 10 Sekunden)?
+* Report: how many 401 responses are *not* followed up by OK-ish requests (within 10 seconds)?
+* Problem: we want to trigger on the absence of an event
 
 <!--v-->
 

@@ -194,6 +194,13 @@ Let's talk about Kafka ...
 
 <!--s-->
 
+# Trying Things
+
+* docker run -ti -e ADV_HOST=localhost -e RUNNING_SAMPLEDATA=0 -e RUNTESTS=0 -e FORWARDLOGS=0 -e SAMPLEDATA=0 -p 8082:8082 -p 3030:3030  landoop/fast-data-dev:latest
+* kafka-topics --zookeeper localhost --create --topic test.foo --replication-factor 1 --partitions 12
+
+<!--s-->
+
 # TL;DR
 
 Kafka is nice, if ...

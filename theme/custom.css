@@ -31,3 +31,8 @@
 .reveal blockquote {
   width: 100%;
 }
+
+
+.reveal table {
+  font-size: 60%;
+}

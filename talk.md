@@ -10,6 +10,48 @@ Stefan Siegl (@stesie23, <rolf@mayflower.de>)
 
 <!--s-->
 
+Let's talk about Kafka ...
+
+![Picture of Franz Kafka](kafka_portrait.jpg)
+
+<!--v-->
+
+... and rabbits
+
+![Picture of a rabbit](rabbit.jpg)
+
+<small>picture (c) CC-BY Steven Arena</small>
+
+<!--v-->
+
+# ¯\\\_(ツ)_/¯
+
+* messaging between different services
+
+
+<!--s-->
+
+# Agenda
+
+* Brief comparison
+* Kafka Overview & run-through
+* Usage Patterns
+* _break_
+* Kafka Streams
+
+<!--s-->
+
+# Kafka vs. Rabbit
+
+|             | Kafka                                      | RabbitMQ                       |
+|-------------|--------------------------------------------|--------------------------------|
+| what is it? | message bus, high-ingress streams + replay | general purpose message broker |
+| broker      | pretty dumb                                | complex                        |
+| client      | complex                                    | pretty dumb                    |
+| scalability | horizontal                                 | vertical (mostly)              |
+
+<!--s-->
+
 # Kafka Basics
 
 ![Kafka Overview](kafka-apis.png)

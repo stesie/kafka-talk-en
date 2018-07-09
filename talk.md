@@ -280,8 +280,8 @@ Kafka is nice, if ...
 * started with either `groupBy` or `groupByKey`
 * grouped stream then must be aggregated by
    * count
-   * reduce (value -> value -> value)
-   * aggregate (aggregate, key -> value -> aggregate -> aggregate)
+   * reduce (value → value → value)
+   * aggregate (aggregate, key → value → aggregate → aggregate)
 
 <!--v-->
 
@@ -315,12 +315,7 @@ Kafka is nice, if ...
 * grouped stream can be partitioned into windows
    * time-based (possibly with overlappings)
    * session-based
-
-<!--v-->
-
-## Example
-
-* Report: how many internal server errors per five minute interval?
+* Example: how many internal server errors per five minute interval?
 
 
 <!--v-->
@@ -342,7 +337,10 @@ Kafka is nice, if ...
 * Report: how many 401 responses are *not* followed up by OK-ish requests (within 10 seconds)?
 * Problem: we want to trigger on the absence of an event
 
-<!--v-->
+<!--s-->
 
-@todo Beispielcode
+# That's it!
 
+## Questions?
+
+Stefan Siegl (@stesie23, <rolf@mayflower.de>)

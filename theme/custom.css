@@ -1,0 +1,38 @@
+@import url("../css/theme/white.css");
+
+.reveal section img {
+  border: 0;
+  box-shadow: none;
+
+  max-height: 50vh;
+}
+
+.reveal h1, .reveal h2, .reveal h3 {
+  text-transform: inherit;
+}
+
+.reveal img.small {
+  width: 30%;
+  height: 30%;
+}
+
+.pull-left {
+  float: left;
+}
+
+.pull-right {
+  float: right;
+}
+
+.reveal cite {
+  font-size: 60%;
+}
+
+.reveal blockquote {
+  width: 100%;
+}
+
+
+.reveal table {
+  font-size: 60%;
+}

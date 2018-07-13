@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Kafka 101</title>
+        <link rel="stylesheet" href="./css/reveal.css">
+        <link rel="stylesheet" href="./theme/custom.css" id="theme">
+        <link rel="stylesheet" href="./css/highlight/solarized-light.css">
+        <link rel="stylesheet" href="./css/print/paper.css" type="text/css" media="print">
+
+    </head>
+    <body>
+
+        <div class="reveal">
+            <div class="slides"><section  data-markdown><script type="text/template">
+
+# Kafka 101
+
+Stefan Siegl (@stesie23, <rolf@mayflower.de>)
+
+</script></section><section ><section data-markdown><script type="text/template">
+
+Let's talk about Kafka ...
+
+![Picture of Franz Kafka](kafka_portrait.jpg)
+
+</script></section><section data-markdown><script type="text/template">
+
+... and rabbits
+
+![Picture of a rabbit](rabbit.jpg)
+
+<small>picture (c) CC-BY Steven Arena</small>
+
+</script></section><section data-markdown><script type="text/template">
+
+# ¯\\\_(ツ)_/¯
+
+* messaging between different services
+
+
+</script></section></section><section  data-markdown><script type="text/template">
+
+# Agenda
+
+* Brief comparison
+* Kafka Overview & run-through
+* Usage Patterns
+* _break_
+* Kafka Streams
+
+</script></section><section  data-markdown><script type="text/template">
+
+# Kafka vs. Rabbit
+
+|             | Kafka                                      | RabbitMQ                       |
+|-------------|--------------------------------------------|--------------------------------|
+| what is it? | message bus, high-ingress streams + replay | general purpose message broker |
+| broker      | pretty dumb                                | complex                        |
+| client      | complex                                    | pretty dumb                    |
+| scalability | horizontal                                 | vertical (mostly)              |
+
+</script></section><section ><section data-markdown><script type="text/template">
+
+# Kafka Basics
+
+![Kafka Overview](kafka-apis.png)
+
+</script></section><section data-markdown><script type="text/template">
+
+# Messages
+
+* consist Key & Value
+* internally represented as binary data
+* typically: JSON or Avro
+
+</script></section><section data-markdown><script type="text/template">
+
+# Topics
+
+* ... are a "category" of messages
+* (boundary as of a DDD aggregate)
+* ... are partitioned
+
+</script></section><section data-markdown><script type="text/template">
+
+# Partitions
+
+* "commit log" of new messages
+* always appended
+* messages only ordered within partition
+* base of replication
+* 1 Leader, 0..n Follower
+
+</script></section><section data-markdown><script type="text/template">
+
+![anatomy of a topic with its' partitions](topic_anatomy.png)
+
+</script></section><section data-markdown><script type="text/template">
+
+# Producer
+
+* publishes messages onto a topic
+* producer decides onto which partition
+* messages without a key, typically round-robin
+* with a key, based on a hash over the key (mod n)
+
+</script></section><section data-markdown><script type="text/template">
+
+# Consumer
+
+* fetches messages from a topic
+* progress (so-called "offset") is tracked by the consumer(!)
+   * via Commit onto internal topic
+* messages remain on the topic
+* arbitrary number of parallel consumers on a topic
+
+</script></section><section data-markdown><script type="text/template">
+
+![Consumer can read from different offsets](log_consumer.png)
+
+</script></section><section data-markdown><script type="text/template">
+
+# Consumer Groups
+
+* "Label" which multiple consumers can use to sync among each other
+* just a simple string
+* distribution happens on partition level
+* i.e. never two consumers will share a single "half" partition
+* number of partitions is upper bound for consumers within a group
+
+</script></section><section data-markdown><script type="text/template">
+
+![two consumer groups](consumer-groups.png)
+
+</script></section><section data-markdown><script type="text/template">
+
+# Number of Partitions
+
+* (extremely) hard to change
+* use enough so you can scale
+* number should be divisible by number of consumers without rest  
+  ...otherwise imbalance of load
+* usually like 12 or 40
+
+</script></section><section data-markdown><script type="text/template">
+
+# Retention Policy
+
+* what happens to "old" messages?
+* default: eliminate after 7d
+* two "types" of messages
+   * Event Stream
+   * Aggregated Data
+* Log Compaction: eliminate old messages with same key
+
+</script></section><section data-markdown><script type="text/template">
+
+![Visualisation of Log Cleaner](log_cleaner_anatomy.png)
+
+</script></section></section><section ><section data-markdown><script type="text/template">
+
+# Usage Pattern
+</script></section><section data-markdown><script type="text/template">
+
+## Queue
+
+* one process adds tasks to a queue + bunch of worker nodes processing each
+* arbitrary number of services is part of a *single* consumer group
+* if tasks are stateless, no key is needed (-> round-robin distribution)
+* if workers aggregate events, provide key to partition on
+
+</script></section><section data-markdown><script type="text/template">
+
+## Pub/Sub
+
+* event is published + plenty of "interested" parties
+* each service is part of *its own* consumer group
+* consequence: each service will receive the event for processing
+
+</script></section><section data-markdown><script type="text/template">
+
+## Mix of both
+
+* e.g. events are published, multiple services with many instances of each
+* every kind of service has its own consumer group
+* instances of the same service are part *of the same* consumer group
+
+</script></section><section data-markdown><script type="text/template">
+
+## Replay
+
+* as consumers track the offsets on their own, they can seek back to the beginning
+* new service may decide to process "from now on" or "from the beginnig"
+
+</script></section></section><section  data-markdown><script type="text/template">
+
+# Scalability
+
+* Kafka's brokers are pretty dumb
+* much of the work is done by Producers & Consumers
+* consequence: differences in features of client libraries (e.g. Java vs. PHP)
+   * e.g. PHP `nmred/kafka-php` always produces in round robin mode (regardless of Key)
+
+</script></section><section  data-markdown><script type="text/template">
+
+# Trying Things
+
+* docker run -ti -e ADV_HOST=localhost -e RUNNING_SAMPLEDATA=0 -e RUNTESTS=0 -e FORWARDLOGS=0 -e SAMPLEDATA=0 -p 8082:8082 -p 3030:3030  landoop/fast-data-dev:latest
+* kafka-topics --zookeeper localhost --create --topic test.foo --replication-factor 1 --partitions 12
+
+</script></section><section  data-markdown><script type="text/template">
+
+# TL;DR
+
+Kafka is nice, if ...
+* ... message retention is of advantage
+* ... you need the scalability
+* ... fun to work with if you're on the JVM
+
+</script></section><section ><section data-markdown><script type="text/template">
+
+# kafka-streams
+
+</script></section><section data-markdown><script type="text/template">
+
+## kafka-streams
+
+* java library for stream processing
+* cares for
+   * distribution among instances
+   * error handling
+   * windowing
+   * state distribution/management
+
+</script></section><section data-markdown><script type="text/template">
+
+## two different APIs
+
+* Streams DSL (= high-level)
+* Processor API (= low-level)
+
+</script></section></section><section ><section data-markdown><script type="text/template">
+
+# Examples
+
+</script></section><section data-markdown><script type="text/template">
+
+## Stateless Processor
+
+* the simple case
+* topology starts with at a topic (or several)
+* Streams DSL offers common primitives like `filter` & `map`
+* result can be
+   * processed locally (`foreach`)
+   * published back to kafka (`to`)
+
+</script></section><section data-markdown><script type="text/template">
+
+### Example
+
+* simple processing pipeline of nginx access logs
+* first step: parse each line and re-publish
+
+</script></section><section data-markdown><script type="text/template">
+
+```java
+    @Bean
+    public KStream<?, ?> build(StreamsBuilder streamsBuilder) {
+        KStream<String, String> stream = streamsBuilder
+                .stream("streamsdemo.logparser.raw", Consumed.with(null, new StringSerde()));
+
+        stream
+            .mapValues(LogEntrySpecification::of)
+            .filter((k, v) -> v != null)
+            .selectKey((k, v) -> v.getIpAddress())
+            .to("streamsdemo.logparser.entries", 
+                Produced.with(new StringSerde(), new JsonSerde<>(LogEntry.class)));
+
+        return stream;
+    }
+```
+
+</script></section><section data-markdown><script type="text/template">
+
+## Stateful Processor
+
+* kafka-streams can provide local state-stores
+* partitioned based on source-topic
+* started with either `groupBy` or `groupByKey`
+* grouped stream then must be aggregated by
+   * count
+   * reduce (value → value → value)
+   * aggregate (aggregate, key → value → aggregate → aggregate)
+
+</script></section><section data-markdown><script type="text/template">
+
+### Example
+
+* determine sum of response bytes by IP-address
+
+</script></section><section data-markdown><script type="text/template">
+
+```java
+    @Bean
+    public KStream<?, ?> build(StreamsBuilder streamsBuilder) {
+        KStream<String, LogEntry> stream = streamsBuilder.stream("streamsdemo.logparser.entries",
+            Consumed.with(new StringSerde(), new JsonSerde<>(LogEntry.class)));
+
+        stream
+            .mapValues(LogEntry::getBytesSent)
+            .groupByKey(Serialized.with(new StringSerde(), new LongSerde()))
+            .reduce((a, b) -> a + b)
+            .toStream()
+            .foreach((k, v) -> log.info("Bytes sent to {} so far: {}", k, v));
+
+        return stream;
+    }
+```
+
+</script></section><section data-markdown><script type="text/template">
+
+## Windowing
+
+* grouped stream can be partitioned into windows
+   * time-based (possibly with overlappings)
+   * session-based
+* Example: how many internal server errors per five minute interval?
+
+
+</script></section><section data-markdown><script type="text/template">
+
+## Processor API
+
+* low-level API, which the DSL is based on
+* every processing node is created "from scratch"
+* process-method is invoked for each incoming message
+* ... and can forward 0..n messages
+* topology is a free, acyclic graph
+* arbitrary accesses to local state stores
+* punctuation callbacks
+
+</script></section><section data-markdown><script type="text/template">
+
+## Example
+
+* Report: how many 401 responses are *not* followed up by OK-ish requests (within 10 seconds)?
+* Problem: we want to trigger on the absence of an event
+
+</script></section></section><section  data-markdown><script type="text/template">
+
+# That's it!
+
+## Questions?
+
+Stefan Siegl (@stesie23, <rolf@mayflower.de>)
+</script></section></div>
+        </div>
+
+        <script src="./lib/js/head.min.js"></script>
+        <script src="./js/reveal.js"></script>
+
+        <script>
+            function extend() {
+              var target = {};
+              for (var i = 0; i < arguments.length; i++) {
+                var source = arguments[i];
+                for (var key in source) {
+                  if (source.hasOwnProperty(key)) {
+                    target[key] = source[key];
+                  }
+                }
+              }
+              return target;
+            }
+
+            // Optional libraries used to extend on reveal.js
+            var deps = [
+              { src: './lib/js/classList.js', condition: function() { return !document.body.classList; } },
+              { src: './plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+              { src: './plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+              { src: './plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+              { src: './plugin/zoom-js/zoom.js', async: true },
+              { src: './plugin/notes/notes.js', async: true },
+              { src: './plugin/math/math.js', async: true }
+            ];
+
+            // default options to init reveal.js
+            var defaultOptions = {
+              controls: true,
+              progress: true,
+              history: true,
+              center: true,
+              transition: 'default', // none/fade/slide/convex/concave/zoom
+              dependencies: deps
+            };
+
+            // options from URL query string
+            var queryOptions = Reveal.getQueryHash() || {};
+
+            var options = {};
+            options = extend(defaultOptions, options, queryOptions);
+            Reveal.initialize(options);
+        </script>
+        
+    </body>
+</html>
